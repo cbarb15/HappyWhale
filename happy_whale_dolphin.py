@@ -6,8 +6,6 @@ from tensorflow import keras
 from tensorflow.keras import layers
 from tensorflow.keras import Sequential
 import pathlib
-import io
-import csv
 
 batch_size = 32
 image_height = 180
@@ -73,7 +71,9 @@ for file in val_dataset.take(10):
     val_images.append(image)
 
 train_dataset_with_labels = tf.data.Dataset.from_tensor_slices((images, labels))
+train_dataset_with_labels = train_dataset_with_labels.batch(batch_size)
 val_dataset_withLabels = tf.data.Dataset.from_tensor_slices((val_images, val_labels))
+
 
 AUTOTUNE = tf.data.AUTOTUNE
 # train_dataset_with_labels = train_dataset_with_labels.cache(1000).prefetch(buffer_size=AUTOTUNE)
@@ -92,7 +92,7 @@ layers.RandomFlip("horizontal"),
 )
 
 model = Sequential([
-  keras.Input(shape=(180, 180,3)),
+  keras.Input(shape=(180, 180, 3)),
   data_augmentation,
   layers.Rescaling(1./255),
   layers.Conv2D(16, 3, padding='same', activation='relu'),
@@ -111,25 +111,25 @@ model.summary()
 model.compile(optimizer='adam', loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True), metrics=['accuracy'])
 
 history = model.fit(train_dataset_with_labels, validation_data=val_dataset_withLabels, epochs=15)
-
-acc = history.history['accuracy']
-val_acc = history.history['val_accuracy']
-
-loss = history.history['loss']
-val_loss = history.history['val_loss']
-
-epochs_range = range(15)
-
-plt.figure(figsize=(8, 8))
-plt.subplot(1, 2, 1)
-plt.plot(epochs_range, acc, label='Training Accuracy')
-plt.plot(epochs_range, val_acc, label='Validation Accuracy')
-plt.legend(loc='lower right')
-plt.title('Training and Validation Accuracy')
-
-plt.subplot(1, 2, 2)
-plt.plot(epochs_range, loss, label='Training Loss')
-plt.plot(epochs_range, val_loss, label='Validation Loss')
-plt.legend(loc='upper right')
-plt.title('Training and Validation Loss')
-plt.show()
+#
+# acc = history.history['accuracy']
+# val_acc = history.history['val_accuracy']
+#
+# loss = history.history['loss']
+# val_loss = history.history['val_loss']
+#
+# epochs_range = range(15)
+#
+# plt.figure(figsize=(8, 8))
+# plt.subplot(1, 2, 1)
+# plt.plot(epochs_range, acc, label='Training Accuracy')
+# plt.plot(epochs_range, val_acc, label='Validation Accuracy')
+# plt.legend(loc='lower right')
+# plt.title('Training and Validation Accuracy')
+#
+# plt.subplot(1, 2, 2)
+# plt.plot(epochs_range, loss, label='Training Loss')
+# plt.plot(epochs_range, val_loss, label='Validation Loss')
+# plt.legend(loc='upper right')
+# plt.title('Training and Validation Loss')
+# plt.show()
