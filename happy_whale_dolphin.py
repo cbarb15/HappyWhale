@@ -59,17 +59,15 @@ labels = []
 images = []
 
 counter = 0
-for file in train_dataset:
+for file in train_dataset.take(10):
     image, label = process_path(file)
     labels.append(label)
     images.append(image)
-    counter += 1
-    print(f'data added {counter}')
 
 val_labels = []
 val_images = []
 
-for file in val_dataset:
+for file in val_dataset.take(10):
     image, label = process_path(file)
     val_labels.append(label)
     val_images.append(image)
@@ -78,24 +76,25 @@ train_dataset_with_labels = tf.data.Dataset.from_tensor_slices((images, labels))
 val_dataset_withLabels = tf.data.Dataset.from_tensor_slices((val_images, val_labels))
 
 AUTOTUNE = tf.data.AUTOTUNE
-train_dataset_with_labels = train_dataset_with_labels.cache(1000).prefetch(buffer_size=AUTOTUNE)
-val_dataset_withLabels = val_dataset_withLabels.cache(1000).prefetch(buffer_size=AUTOTUNE)
+# train_dataset_with_labels = train_dataset_with_labels.cache(1000).prefetch(buffer_size=AUTOTUNE)
+# val_dataset_withLabels = val_dataset_withLabels.cache(1000).prefetch(buffer_size=AUTOTUNE)
 
 data_augmentation = Sequential(
   [
-    layers.RandomFlip("horizontal",
-                      input_shape=(image_height,
-                                  image_width,
-                                  3)),
+    # layers.RandomFlip("horizontal",
+    #                   input_shape=(image_height,
+    #                               image_width,
+    #                               3)),
+layers.RandomFlip("horizontal"),
     layers.RandomRotation(0.1),
     layers.RandomZoom(0.1),
   ]
 )
 
 model = Sequential([
-  layers.Rescaling(scale=1./255),
+  keras.Input(shape=(180, 180,3)),
   data_augmentation,
-  layers.Rescaling(1./255, input_shape=(image_height, image_width, 3)),
+  layers.Rescaling(1./255),
   layers.Conv2D(16, 3, padding='same', activation='relu'),
   layers.MaxPooling2D(),
   layers.Conv2D(32, 3, padding='same', activation='relu'),
@@ -104,8 +103,10 @@ model = Sequential([
   layers.MaxPooling2D(),
   layers.Flatten(),
   layers.Dense(128, activation='relu'),
-  layers.Dense(5, name="outputs")
+  layers.Dense(1, name="outputs")
 ])
+
+model.summary()
 
 model.compile(optimizer='adam', loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True), metrics=['accuracy'])
 
