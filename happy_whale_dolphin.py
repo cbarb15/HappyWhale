@@ -22,6 +22,9 @@ train_dataset = list_ds.skip(val_size)
 val_dataset = list_ds.take(val_size)
 
 train_labels_dataframe = pd.read_csv("data/train.csv")
+vocab = train_labels_dataframe['individual_id'].to_numpy()
+
+
 labels_list = []
 
 # def write_labels_to_csv():
@@ -34,12 +37,17 @@ labels_list = []
 #             print(f'writing label {i} to file {arr[0], arr[1], arr[2]}')
 #             f.write(f'{arr[0]}, {arr[1], arr[2]}\n')
 
+
 def get_label(file_path):
     # jpg_name = tf.strings.split(file_path, '/')[-1].numpy().decode('utf-8')
     parts = tf.strings.split(file_path, '/')
     jpg_name = parts[-1]
     row_label = train_labels_dataframe.loc[train_labels_dataframe['image'] == jpg_name]
-    return row_label[['individual_id']].to_numpy().flatten()
+    # layer = layers.StringLookup(vocabulary=np.unique(vocab), output_mode='one_hot')
+    label = row_label[['individual_id']].to_numpy().flatten()[0]
+    label_as_int = int(label, 16)
+
+    return  np.array(label_as_int)
 
 
 def decode_img(img):
@@ -57,7 +65,7 @@ labels = []
 images = []
 
 counter = 0
-for file in train_dataset.take(10):
+for file in train_dataset.take(150):
     image, label = process_path(file)
     labels.append(label)
     images.append(image)
@@ -65,7 +73,7 @@ for file in train_dataset.take(10):
 val_labels = []
 val_images = []
 
-for file in val_dataset.take(10):
+for file in val_dataset.take(150):
     image, label = process_path(file)
     val_labels.append(label)
     val_images.append(image)
@@ -73,9 +81,9 @@ for file in val_dataset.take(10):
 train_dataset_with_labels = tf.data.Dataset.from_tensor_slices((images, labels))
 train_dataset_with_labels = train_dataset_with_labels.batch(batch_size)
 val_dataset_withLabels = tf.data.Dataset.from_tensor_slices((val_images, val_labels))
+val_dataset_withLabels = val_dataset_withLabels.batch(batch_size)
 
-
-AUTOTUNE = tf.data.AUTOTUNE
+# AUTOTUNE = tf.data.AUTOTUNE
 # train_dataset_with_labels = train_dataset_with_labels.cache(1000).prefetch(buffer_size=AUTOTUNE)
 # val_dataset_withLabels = val_dataset_withLabels.cache(1000).prefetch(buffer_size=AUTOTUNE)
 
@@ -112,24 +120,24 @@ model.compile(optimizer='adam', loss=tf.keras.losses.SparseCategoricalCrossentro
 
 history = model.fit(train_dataset_with_labels, validation_data=val_dataset_withLabels, epochs=15)
 #
-# acc = history.history['accuracy']
-# val_acc = history.history['val_accuracy']
-#
-# loss = history.history['loss']
-# val_loss = history.history['val_loss']
-#
-# epochs_range = range(15)
-#
-# plt.figure(figsize=(8, 8))
-# plt.subplot(1, 2, 1)
-# plt.plot(epochs_range, acc, label='Training Accuracy')
-# plt.plot(epochs_range, val_acc, label='Validation Accuracy')
-# plt.legend(loc='lower right')
-# plt.title('Training and Validation Accuracy')
-#
-# plt.subplot(1, 2, 2)
-# plt.plot(epochs_range, loss, label='Training Loss')
-# plt.plot(epochs_range, val_loss, label='Validation Loss')
-# plt.legend(loc='upper right')
-# plt.title('Training and Validation Loss')
-# plt.show()
+acc = history.history['accuracy']
+val_acc = history.history['val_accuracy']
+
+loss = history.history['loss']
+val_loss = history.history['val_loss']
+
+epochs_range = range(15)
+
+plt.figure(figsize=(8, 8))
+plt.subplot(1, 2, 1)
+plt.plot(epochs_range, acc, label='Training Accuracy')
+plt.plot(epochs_range, val_acc, label='Validation Accuracy')
+plt.legend(loc='lower right')
+plt.title('Training and Validation Accuracy')
+
+plt.subplot(1, 2, 2)
+plt.plot(epochs_range, loss, label='Training Loss')
+plt.plot(epochs_range, val_loss, label='Validation Loss')
+plt.legend(loc='upper right')
+plt.title('Training and Validation Loss')
+plt.show()
