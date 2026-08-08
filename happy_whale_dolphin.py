@@ -53,9 +53,7 @@ def get_label(file_path):
     label = row_label['individual_id'].to_numpy()[0]
     encoded_label = encoding_dict[label]
 
-    return tf.convert_to_tensor([encoded_label], dtype=tf.int32)
-    # return  np.array(label_as_int)
-
+    return encoded_label
 
 def decode_img(img):
     img = tf.io.decode_jpeg(img, channels=3)
@@ -71,7 +69,7 @@ def process_path(file_path):
 labels = []
 images = []
 
-for file in train_dataset.take(25):
+for file in train_dataset.take(150):
     image, label = process_path(file)
     labels.append(label)
     images.append(image)
@@ -79,15 +77,15 @@ for file in train_dataset.take(25):
 val_labels = []
 val_images = []
 
-# for file in val_dataset.take(1):
-#     image, label = process_path(file)
-#     val_labels.append(label)
-#     val_images.append(image)
+for file in val_dataset.take(150):
+    image, label = process_path(file)
+    val_labels.append(label)
+    val_images.append(image)
 
 train_dataset_with_labels = tf.data.Dataset.from_tensor_slices((images, labels))
 train_dataset_with_labels = train_dataset_with_labels.batch(batch_size)
-# val_dataset_withLabels = tf.data.Dataset.from_tensor_slices((val_images, val_labels))
-# val_dataset_withLabels = val_dataset_withLabels.batch(batch_size)
+val_dataset_withLabels = tf.data.Dataset.from_tensor_slices((val_images, val_labels))
+val_dataset_withLabels = val_dataset_withLabels.batch(batch_size)
 
 # AUTOTUNE = tf.data.AUTOTUNE
 # train_dataset_with_labels = train_dataset_with_labels.cache(1000).prefetch(buffer_size=AUTOTUNE)
@@ -113,37 +111,34 @@ model = Sequential([
   layers.MaxPooling2D(),
   layers.Flatten(),
   layers.Dense(128, activation='relu'),
-  layers.Dense(1, name="outputs")
+  layers.Dense(15587, name="outputs")
 ])
 
 # model.summary()
 
-model.compile(optimizer='adam', loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True), metrics=['accuracy'])
+# model.compile(optimizer='adam', loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True), metrics=['accuracy'])
+model.compile(optimizer='adam', loss=tf.keras.losses.CategoricalCrossentropy(from_logits=True), metrics=['accuracy'])
 
-for img, label in train_dataset_with_labels.take(1):
-    print(f'Img {img}\n')
-    print(f'Label {label}\n')
+history = model.fit(train_dataset_with_labels, validation_data=val_dataset_withLabels, epochs=15)
+#
+acc = history.history['accuracy']
+val_acc = history.history['val_accuracy']
 
-# history = model.fit(train_dataset_with_labels, validation_data=val_dataset_withLabels, epochs=15)
-# #
-# acc = history.history['accuracy']
-# val_acc = history.history['val_accuracy']
-#
-# loss = history.history['loss']
-# val_loss = history.history['val_loss']
-#
-# epochs_range = range(15)
-#
-# plt.figure(figsize=(8, 8))
-# plt.subplot(1, 2, 1)
-# plt.plot(epochs_range, acc, label='Training Accuracy')
-# plt.plot(epochs_range, val_acc, label='Validation Accuracy')
-# plt.legend(loc='lower right')
-# plt.title('Training and Validation Accuracy')
-#
-# plt.subplot(1, 2, 2)
-# plt.plot(epochs_range, loss, label='Training Loss')
-# plt.plot(epochs_range, val_loss, label='Validation Loss')
-# plt.legend(loc='upper right')
-# plt.title('Training and Validation Loss')
-# plt.show()
+loss = history.history['loss']
+val_loss = history.history['val_loss']
+
+epochs_range = range(15)
+
+plt.figure(figsize=(8, 8))
+plt.subplot(1, 2, 1)
+plt.plot(epochs_range, acc, label='Training Accuracy')
+plt.plot(epochs_range, val_acc, label='Validation Accuracy')
+plt.legend(loc='lower right')
+plt.title('Training and Validation Accuracy')
+
+plt.subplot(1, 2, 2)
+plt.plot(epochs_range, loss, label='Training Loss')
+plt.plot(epochs_range, val_loss, label='Validation Loss')
+plt.legend(loc='upper right')
+plt.title('Training and Validation Loss')
+plt.show()
